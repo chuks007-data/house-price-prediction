@@ -19,14 +19,16 @@ st.write(
 df = pd.read_csv("data/house_sales.csv")
 
 
-# SELECT FEATURES
-
+# Select features
 X = df[['months_listed', 'bedrooms', 'area']]
 y = df['sale_price']
 
+# Convert columns to numeric
+X['months_listed'] = pd.to_numeric(X['months_listed'], errors='coerce')
+X['bedrooms'] = pd.to_numeric(X['bedrooms'], errors='coerce')
+X['area'] = pd.to_numeric(X['area'], errors='coerce')
 
-# REMOVE MISSING VALUES
-
+# Remove missing values
 X = X.dropna()
 y = y.loc[X.index]
 
