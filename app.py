@@ -1,92 +1,79 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import joblib
-
-from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 
-# ----------------------------
-# Load Dataset
-# ----------------------------
+
+# PAGE TITLE
+
+st.title("🏠 House Price Prediction App")
+
+st.write(
+    "This app predicts house prices based on "
+    "months listed, number of bedrooms, and area."
+)
+
+
+# LOAD DATA
+
 df = pd.read_csv("data/house_sales.csv")
 
-# ----------------------------
-# Prepare Data
-# ----------------------------
-df = pd.get_dummies(df, drop_first=True)
 
-X = df.drop("sale_price", axis=1)
-y = df["sale_price"]
+# SELECT FEATURES
 
-# ----------------------------
-# Train Model
-# ----------------------------
+X = df[['months_listed', 'bedrooms', 'area']]
+y = df['sale_price']
+
+
+# REMOVE MISSING VALUES
+
+X = X.dropna()
+y = y.loc[X.index]
+
+
+# TRAIN MODEL
+
 model = LinearRegression()
 model.fit(X, y)
 
-# ----------------------------
-# Streamlit App
-# ----------------------------
-st.title("🏠 House Price Prediction App")
 
-st.write("Predict house prices using machine learning.")
+# USER INPUTS
 
-# ----------------------------
-# User Inputs
-# ----------------------------
-area = st.number_input("Area (Square Feet)", min_value=500, max_value=10000, value=2000)
+st.sidebar.header("Enter House Details")
 
-bedrooms = st.slider("Bedrooms", 1, 10, 3)
+months_listed = st.sidebar.number_input(
+    "Months Listed",
+    min_value=0.0,
+    value=3.0
+)
 
-bathrooms = st.slider("Bathrooms", 1, 10, 2)
+bedrooms = st.sidebar.number_input(
+    "Bedrooms",
+    min_value=1,
+    value=3
+)
 
-garage = st.slider("Garage Spaces", 0, 5, 1)
+area = st.sidebar.number_input(
+    "Area (sq ft)",
+    min_value=500,
+    value=1500
+)
 
-months_listed = st.slider("Months Listed", 1, 24, 6)
 
-# ----------------------------
-# Create Input Data
-# ----------------------------
-input_data = pd.DataFrame({
-    'area': [area],
-    'bedrooms': [bedrooms],
-    'bathrooms': [bathrooms],
-    'garage': [garage],
-    'months_listed': [months_listed]
-})
+# PREDICTION
 
-# ----------------------------
-# Match Training Columns
-# ----------------------------
-for col in X.columns:
-    if col not in input_data.columns:
-        input_data[col] = 0
+input_data = np.array([[months_listed, bedrooms, area]])
 
-input_data = input_data[X.columns]
-
-# ----------------------------
-# Prediction
-# ----------------------------
 prediction = model.predict(input_data)
 
-# ----------------------------
-# Display Result
-# ----------------------------
+
+# DISPLAY RESULT
 st.subheader("Predicted House Price")
 
 st.success(f"${prediction[0]:,.2f}")
 
-# ----------------------------
-# Business Recommendation
-# ----------------------------
-st.subheader("Business Recommendation")
 
-if prediction[0] > 300000:
-    st.write("This property is classified as a high-value investment property.")
+# SHOW DATASET
+st.subheader("Dataset Preview")
 
-elif prediction[0] > 150000:
-    st.write("This property is classified as a medium-value residential property.")
-
-else:
-    st.write("This property is classified as a budget-friendly property.")
+st.dataframe(df.head())
