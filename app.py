@@ -9,8 +9,7 @@ from sklearn.linear_model import LinearRegression
 st.title("🏠 House Price Prediction App")
 
 st.write(
-    "This app predicts house prices based on "
-    "months listed, number of bedrooms, and area."
+    "This app predicts house prices based on the number of bedrooms."
 )
 
 
@@ -19,16 +18,14 @@ st.write(
 df = pd.read_csv("data/house_sales.csv")
 
 
-# Select features
-X = df[['months_listed', 'bedrooms', 'area']]
+# SELECT FEATURES
+
+X = df[['bedrooms']]
 y = df['sale_price']
 
-# Convert columns to numeric
-X['months_listed'] = pd.to_numeric(X['months_listed'], errors='coerce')
-X['bedrooms'] = pd.to_numeric(X['bedrooms'], errors='coerce')
-X['area'] = pd.to_numeric(X['area'], errors='coerce')
 
-# Remove missing values
+# REMOVE MISSING VALUES
+
 X = X.dropna()
 y = y.loc[X.index]
 
@@ -39,43 +36,34 @@ model = LinearRegression()
 model.fit(X, y)
 
 
-# USER INPUTS
+# USER INPUT
 
 st.sidebar.header("Enter House Details")
-
-months_listed = st.sidebar.number_input(
-    "Months Listed",
-    min_value=0.0,
-    value=3.0
-)
 
 bedrooms = st.sidebar.number_input(
     "Bedrooms",
     min_value=1,
+    max_value=10,
     value=3
-)
-
-area = st.sidebar.number_input(
-    "Area (sq ft)",
-    min_value=500,
-    value=1500
 )
 
 
 # PREDICTION
 
-input_data = np.array([[months_listed, bedrooms, area]])
+input_data = np.array([[bedrooms]])
 
 prediction = model.predict(input_data)
 
 
 # DISPLAY RESULT
+
 st.subheader("Predicted House Price")
 
 st.success(f"${prediction[0]:,.2f}")
 
 
 # SHOW DATASET
+
 st.subheader("Dataset Preview")
 
 st.dataframe(df.head())
