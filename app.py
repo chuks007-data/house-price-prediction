@@ -1,69 +1,111 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 from sklearn.linear_model import LinearRegression
-
+from sklearn.preprocessing import LabelEncoder
 
 # PAGE TITLE
-
-st.title("🏠 House Price Prediction App")
+st.title("🏠 Advanced House Price Prediction App")
 
 st.write(
-    "This app predicts house prices based on the number of bedrooms."
+    "Predict house prices using bedrooms, area, months listed, city, and house type."
 )
 
-
 # LOAD DATA
-
 df = pd.read_csv("data/house_sales.csv")
 
+# CLEAN AREA COLUMN
+df["area"] = (
+    df["area"]
+    .astype(str)
+    .str.replace("sq.m.", "", regex=False)
+    .str.replace(",", "", regex=False)
+)
 
-# SELECT FEATURES
+df["area"] = pd.to_numeric(df["area"], errors="coerce")
 
-X = df[['bedrooms']]
-y = df['sale_price']
+# CONVERT MONTHS LISTED
+df["months_listed"] = pd.to_numeric(df["months_listed"], errors="coerce")
 
+# DROP MISSING VALUES
+df = df.dropna(subset=["months_listed", "bedrooms", "area", "sale_price"])
 
-# REMOVE MISSING VALUES
+# ENCODE CATEGORICAL VARIABLES
+city_encoder = LabelEncoder()
+house_encoder = LabelEncoder()
 
-X = X.dropna()
-y = y.loc[X.index]
+df["city_encoded"] = city_encoder.fit_transform(df["city"])
+df["house_encoded"] = house_encoder.fit_transform(df["house_type"])
 
+# FEATURES
+X = df[
+    [
+        "months_listed",
+        "bedrooms",
+        "area",
+        "city_encoded",
+        "house_encoded"
+    ]
+]
+
+# TARGET
+y = df["sale_price"]
 
 # TRAIN MODEL
-
 model = LinearRegression()
 model.fit(X, y)
 
-
-# USER INPUT
-
+# SIDEBAR
 st.sidebar.header("Enter House Details")
 
-bedrooms = st.sidebar.number_input(
-    "Bedrooms",
-    min_value=1,
-    max_value=10,
-    value=3
+months_listed = st.sidebar.slider(
+    "Months Listed",
+    1.0,
+    12.0,
+    6.0
 )
 
+bedrooms = st.sidebar.slider(
+    "Bedrooms",
+    1,
+    10,
+    3
+)
+
+area = st.sidebar.number_input(
+    "Area (sq.m.)",
+    min_value=50.0,
+    max_value=1000.0,
+    value=250.0
+)
+
+city = st.sidebar.selectbox(
+    "City",
+    df["city"].unique()
+)
+
+house_type = st.sidebar.selectbox(
+    "House Type",
+    df["house_type"].unique()
+)
+
+# ENCODE USER INPUT
+city_encoded = city_encoder.transform([city])[0]
+house_encoded = house_encoder.transform([house_type])[0]
 
 # PREDICTION
-
-input_data = np.array([[bedrooms]])
-
-prediction = model.predict(input_data)
-
+prediction = model.predict([[
+    months_listed,
+    bedrooms,
+    area,
+    city_encoded,
+    house_encoded
+]])
 
 # DISPLAY RESULT
-
 st.subheader("Predicted House Price")
 
 st.success(f"${prediction[0]:,.2f}")
 
-
-# SHOW DATASET
-
+# SHOW DATA
 st.subheader("Dataset Preview")
-
 st.dataframe(df.head())
